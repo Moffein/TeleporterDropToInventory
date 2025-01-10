@@ -5,10 +5,8 @@ using System.Security;
 using RoR2;
 using System.Collections.Generic;
 using BepInEx.Configuration;
-using Facepunch.Steamworks;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using HarmonyLib;
 
 [module: UnverifiableCode]
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
@@ -27,6 +25,7 @@ namespace TeleporterDropToInventory
     [BepInPlugin("com.Moffein.TeleporterDropToInventory", "TeleporterDropToInventory", "1.0.0")]
     public class TeleporterDropToInventoryPlugin : BaseUnityPlugin
     {
+        public static ConfigEntry<bool> printToChat;
         public static ConfigEntry<bool> requireAlive;
         public static bool blacklistCommand;
         public static string blacklistedArtifactsString;
@@ -34,6 +33,7 @@ namespace TeleporterDropToInventory
         public static HashSet<ArtifactDef> blacklistedArtifacts = new HashSet<ArtifactDef>();
         private void Awake()
         {
+            printToChat = Config.Bind<bool>("Settings", "Print to Chat", false, "Print drops to chat.");
             requireAlive = Config.Bind<bool>("Settings", "Require Alive", false, "Only drop items to living players.");
             blacklistCommand = Config.Bind<bool>("Settings", "Blacklist Command", true, "This mod does not take effect if Command is enabled.").Value;
             blacklistedArtifactsString = Config.Bind<string>("Settings", "Blacklisted Artifacts", "", "Disable this mod when any of these artifacts are enabled. Comma separated list (ex. Sacrifice, Command, Vengeance).").Value;
@@ -191,10 +191,22 @@ namespace TeleporterDropToInventory
                 {
                     if (player.master && player.master.inventory && (!requireAlive.Value || !player.master.IsDeadAndOutOfLivesServer()))
                     {
+                        PickupDef toDrop = defaultPickup;
                         ItemIndex toGive = item;
                         if (bossItems.Count > 0)
                         {
                             toGive = bossItems.Dequeue();
+                            PickupIndex bossIndex = PickupCatalog.FindPickupIndex(toGive);
+                            toDrop = PickupCatalog.GetPickupDef(bossIndex);
+                        }
+
+                        if (printToChat.Value)
+                        {
+                            CharacterBody body = player.master.GetBody();
+                            if (body)
+                            {
+                                Chat.AddPickupMessage(body, ((toDrop != null) ? toDrop.nameToken : null) ?? PickupCatalog.invalidPickupToken, (toDrop != null) ? toDrop.baseColor : Color.black, 1);
+                            }
                         }
 
                         player.master.inventory.GiveItem(toGive);
