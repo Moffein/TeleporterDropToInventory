@@ -22,11 +22,12 @@ namespace R2API.Utils
 namespace TeleporterDropToInventory
 {
     [BepInIncompatibility("shbones.MoreMountains")]
-    [BepInPlugin("com.Moffein.TeleporterDropToInventory", "TeleporterDropToInventory", "1.0.0")]
+    [BepInPlugin("com.Moffein.TeleporterDropToInventory", "TeleporterDropToInventory", "1.1.0")]
     public class TeleporterDropToInventoryPlugin : BaseUnityPlugin
     {
         public static ConfigEntry<bool> printToChat;
         public static ConfigEntry<bool> requireAlive;
+        public static ConfigEntry<bool> randomizeOrder;
         public static bool blacklistCommand;
         public static string blacklistedArtifactsString;
 
@@ -37,6 +38,7 @@ namespace TeleporterDropToInventory
             requireAlive = Config.Bind<bool>("Settings", "Require Alive", false, "Only drop items to living players.");
             blacklistCommand = Config.Bind<bool>("Settings", "Blacklist Command", true, "This mod does not take effect if Command is enabled.").Value;
             blacklistedArtifactsString = Config.Bind<string>("Settings", "Blacklisted Artifacts", "", "Disable this mod when any of these artifacts are enabled. Comma separated list (ex. Sacrifice, Command, Vengeance).").Value;
+            randomizeOrder = Config.Bind<bool>("Settings", "Randomize Order", true, "Randomize drop order so it doesn't always start with the host.");
 
             RoR2Application.onLoad += OnLoad;
             On.RoR2.BossGroup.DropRewards += BossGroup_DropRewards;
@@ -184,11 +186,26 @@ namespace TeleporterDropToInventory
 
             //Distribute items
             int itemsGranted = 0;
+
+            int playerCount = PlayerCharacterMasterController.instances.Count;
+            int firstDropIndex = 0;
+            int pIndex = 0;
+            if (randomizeOrder.Value)
+            {
+                firstDropIndex = UnityEngine.Random.Range(0, playerCount);
+            }
+
             while (itemsGranted < dropCount)
             {
                 int initialItemsGranted = itemsGranted;
                 foreach (var player in PlayerCharacterMasterController.instances)
                 {
+                    if (pIndex < firstDropIndex)
+                    {
+                        pIndex++;
+                        continue;
+                    }
+
                     if (player.master && player.master.inventory && (!requireAlive.Value || !player.master.IsDeadAndOutOfLivesServer()))
                     {
                         PickupDef toDrop = defaultPickup;
