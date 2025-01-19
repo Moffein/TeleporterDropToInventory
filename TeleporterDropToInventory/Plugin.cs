@@ -190,6 +190,7 @@ namespace TeleporterDropToInventory
             int playerCount = PlayerCharacterMasterController.instances.Count;
             int firstDropIndex = 0;
             int pIndex = 0;
+            bool firstIter = true;
             if (randomizeOrder.Value)
             {
                 firstDropIndex = UnityEngine.Random.Range(0, playerCount);
@@ -232,7 +233,8 @@ namespace TeleporterDropToInventory
                 }
 
                 //Prevent potential infinite loop
-                if (itemsGranted == initialItemsGranted) break;
+                if (itemsGranted == initialItemsGranted && !firstIter) break;
+                firstIter = false;
             }
         }
 
