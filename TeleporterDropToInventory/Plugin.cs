@@ -22,7 +22,7 @@ namespace R2API.Utils
 namespace TeleporterDropToInventory
 {
     [BepInIncompatibility("shbones.MoreMountains")]
-    [BepInPlugin("com.Moffein.TeleporterDropToInventory", "TeleporterDropToInventory", "1.1.0")]
+    [BepInPlugin("com.Moffein.TeleporterDropToInventory", "TeleporterDropToInventory", "1.0.3")]
     public class TeleporterDropToInventoryPlugin : BaseUnityPlugin
     {
         public static ConfigEntry<bool> printToChat;
@@ -154,7 +154,7 @@ namespace TeleporterDropToInventory
             {
                 for (int i = 0; i < dropCount; i++)
                 {
-                    PickupIndex index = PickupIndex.none;
+                    UniquePickup pickup = UniquePickup.none;
                     //Roll for boss item on each item
                     if (self.rng.nextNormalizedFloat <= self.bossDropChance)
                     {
@@ -163,13 +163,19 @@ namespace TeleporterDropToInventory
                             PickupDropTable pickupDropTable = self.rng.NextElementUniform<PickupDropTable>(self.bossDropTables);
                             if (pickupDropTable != null)
                             {
-                                index = pickupDropTable.GenerateDrop(self.rng);
+                                pickup = pickupDropTable.GeneratePickup(self.rng);
                             }
                         }
                         else
                         {
-                            index = self.rng.NextElementUniform<PickupIndex>(self.bossDrops);
+                            pickup = self.rng.NextElementUniform<UniquePickup>(self.bossDrops);
                         }
+                    }
+
+                    PickupIndex index = PickupIndex.none;
+                    if (pickup != UniquePickup.none)
+                    {
+                        index = pickup.pickupIndex;
                     }
 
                     //Store rolled boss items
@@ -227,7 +233,7 @@ namespace TeleporterDropToInventory
                             }
                         }
 
-                        player.master.inventory.GiveItem(toGive);
+                        player.master.inventory.GiveItemPermanent(toGive);
                         itemsGranted++;
                     }
                 }
